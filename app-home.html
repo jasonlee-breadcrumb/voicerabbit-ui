@@ -1,0 +1,1568 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Voice Rabbit</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:           #f8f5ef;
+      --bg-2:         #ede9df;
+      --bg-3:         #e2ddd1;
+      --surface:      #ffffff;
+      --ink:          #18150f;
+      --ink-2:        #2e2920;
+      --ink-dim:      #504840;
+      --ink-mute:     #87806f;
+      --line:         rgba(24,21,15,0.10);
+      --line-mid:     rgba(24,21,15,0.14);
+      --line-strong:  rgba(24,21,15,0.22);
+      --accent:       #d4a043;
+      --accent-deep:  #b07a28;
+      --accent-soft:  #fdf5e3;
+      --red-soft:     #fee2e2;
+      --red:          #dc2626;
+      --sans:    "Inter", ui-sans-serif, system-ui, sans-serif;
+      --display: "Fraunces", Georgia, serif;
+      --ease:    cubic-bezier(0.22, 1, 0.36, 1);
+      --sidebar: 224px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; overflow: hidden; background: var(--bg-2); }
+    body {
+      font-family: var(--sans);
+      color: var(--ink);
+      font-size: 15.5px;
+      line-height: 1.55;
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+    }
+
+    /* ── Shell ───────────────────────────────────────── */
+    .app { display: flex; height: 100vh; overflow: hidden; }
+
+    /* ── Sidebar ─────────────────────────────────────── */
+    .sidebar {
+      width: var(--sidebar);
+      min-width: var(--sidebar);
+      background: transparent;
+      border-right: none;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden;
+      -webkit-app-region: drag;
+    }
+    .sidebar-top { height: 52px; flex-shrink: 0; }
+    .sidebar-logo {
+      display: flex;
+      align-items: center;
+      padding: 0 18px 20px 12px;
+      -webkit-app-region: no-drag;
+    }
+    .sidebar-logo-text {
+      font-family: var(--display);
+      font-size: 16px;
+      font-weight: 500;
+      color: var(--ink);
+      letter-spacing: -0.01em;
+    }
+    .sidebar-nav {
+      flex: 1;
+      padding: 2px 10px;
+      overflow-y: auto;
+      -webkit-app-region: no-drag;
+    }
+    .sidebar-nav::-webkit-scrollbar { display: none; }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      padding: 8px 10px;
+      border-radius: 8px;
+      cursor: default;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--ink-dim);
+      transition: background .13s, color .13s;
+      user-select: none;
+      -webkit-app-region: no-drag;
+    }
+    .nav-item:hover { background: var(--bg-3); color: var(--ink); }
+    .nav-item.active { background: var(--bg-3); color: var(--ink); }
+    .nav-item .label { flex: 1; }
+
+    .sidebar-bottom {
+      padding: 10px 10px 22px;
+      -webkit-app-region: no-drag;
+    }
+
+    /* ── Content ─────────────────────────────────────── */
+    .content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden;
+      background: var(--surface);
+      border-radius: 12px 0 0 12px;
+      margin: 8px 0 8px 0;
+      box-shadow: none;
+      -webkit-app-region: drag;
+    }
+
+    /* ── Page header (sticky, underlined) ───────────────── */
+    .page-header {
+      flex-shrink: 0;
+      padding: 44px 36px 0;
+      -webkit-app-region: drag;
+    }
+    .page-header-inner {
+      display: flex;
+      align-items: flex-end;
+      gap: 12px;
+      padding-bottom: 14px;
+    }
+    .page-header-left {
+      flex: 1;
+      -webkit-app-region: no-drag;
+    }
+    .page-header-title {
+      font-size: 24px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: var(--ink);
+      line-height: 1.1;
+    }
+    .page-header-sub {
+      font-size: 13px;
+      color: var(--ink-mute);
+      margin-top: 4px;
+    }
+    .page-header-action {
+      flex-shrink: 0;
+      -webkit-app-region: no-drag;
+    }
+
+    .page-scroll {
+      flex: 1;
+      overflow-y: auto;
+      padding: 28px 36px 40px;
+      -webkit-app-region: no-drag;
+    }
+    .page-scroll::-webkit-scrollbar { width: 4px; }
+    .page-scroll::-webkit-scrollbar-track { background: transparent; }
+    .page-scroll::-webkit-scrollbar-thumb { background: var(--bg-3); border-radius: 99px; }
+
+    /* ── History ─────────────────────────────────────── */
+    .history-wrap { max-width: 680px; }
+
+    .date-group { margin-top: 52px; }
+    .date-group:first-child { margin-top: 0; }
+    .date-label {
+      font-size: 11.5px;
+      font-weight: 600;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+      color: var(--ink-mute);
+      margin-bottom: 10px;
+    }
+
+    .history-box {
+      background: var(--surface);
+      border: 1px solid var(--line-mid);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    .h-row {
+      display: flex;
+      gap: 18px;
+      align-items: flex-start;
+      padding: 13px 16px;
+      border-bottom: 1px solid var(--line);
+      transition: background .12s;
+      cursor: default;
+      position: relative;
+    }
+    .h-row:last-child { border-bottom: none; }
+    .h-row:hover { background: var(--bg); }
+
+    .h-time {
+      font-size: 13px;
+      color: var(--ink-dim);
+      white-space: nowrap;
+      padding-top: 2px;
+      min-width: 58px;
+      font-variant-numeric: tabular-nums;
+      font-weight: 500;
+    }
+    .h-text {
+      flex: 1;
+      font-size: 14.5px;
+      color: var(--ink-2);
+      line-height: 1.6;
+    }
+    .h-actions {
+      display: flex;
+      gap: 3px;
+      opacity: 0;
+      transition: opacity .13s;
+      flex-shrink: 0;
+      padding-top: 1px;
+    }
+    .h-row:hover .h-actions { opacity: 1; }
+
+    .act-btn {
+      width: 36px; height: 36px;
+      border-radius: 7px;
+      display: flex; align-items: center; justify-content: center;
+      cursor: default;
+      border: none;
+      background: transparent;
+      color: var(--ink-dim);
+      font: inherit;
+      transition: background .12s, color .12s;
+    }
+    .act-btn:hover           { background: var(--bg-2); color: var(--ink); }
+    .act-btn.del:hover       { background: var(--bg-3); color: var(--ink); }
+    .act-btn.copied          { background: var(--accent-soft); color: var(--accent-deep); }
+
+    .show-more-row {
+      padding: 11px 16px;
+      font-size: 13.5px;
+      font-weight: 500;
+      color: var(--ink-mute);
+      cursor: default;
+      transition: background .12s, color .12s;
+      text-align: center;
+      border-top: 1px solid var(--line);
+    }
+    .show-more-row:hover { background: var(--bg); color: var(--ink-2); }
+
+    /* ── Empty ───────────────────────────────────────── */
+    .empty {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 56px 20px;
+      gap: 10px;
+      color: var(--ink-mute);
+      text-align: center;
+    }
+    .empty svg { opacity: 0.3; }
+    .empty p { font-size: 15px; }
+    .empty small { font-size: 13px; }
+
+    /* ── Settings page ───────────────────────────────── */
+    .settings-section {
+      max-width: 620px;
+      margin-bottom: 40px;
+    }
+    .settings-section-title {
+      font-size: 11.5px;
+      font-weight: 600;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+      color: var(--ink-mute);
+      margin-bottom: 12px;
+    }
+    .settings-box {
+      background: var(--surface);
+      border: 1px solid var(--line-mid);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    .settings-row {
+      display: flex;
+      align-items: center;
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--line);
+      gap: 12px;
+    }
+    .settings-row:last-child { border-bottom: none; }
+    .settings-row-label {
+      flex: 1;
+      font-size: 14.5px;
+      font-weight: 500;
+      color: var(--ink);
+    }
+    .settings-row-sub {
+      font-size: 13px;
+      color: var(--ink-mute);
+      font-weight: 400;
+      margin-top: 1px;
+    }
+
+    .kbd-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      background: var(--bg-2);
+      border: 1px solid var(--line-strong);
+      border-radius: 8px;
+      padding: 5px 10px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--ink-2);
+      letter-spacing: 0.02em;
+    }
+    .kbd-pill.capturing {
+      background: var(--accent-soft);
+      border-color: var(--accent);
+      color: var(--accent-deep);
+      animation: pulse 1.2s infinite;
+    }
+    @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:.65; } }
+
+    .btn-sm {
+      padding: 6px 14px;
+      border-radius: 7px;
+      font-size: 13px;
+      font-weight: 500;
+      background: var(--bg-2);
+      border: 1px solid var(--line-strong);
+      color: var(--ink-2);
+      cursor: default;
+      font: inherit;
+      transition: background .12s;
+    }
+    .btn-sm:hover { background: var(--bg-3); }
+
+    .lang-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding: 16px 18px;
+    }
+    .lang-pill {
+      padding: 7px 14px;
+      border-radius: 999px;
+      font-size: 13.5px;
+      font-weight: 500;
+      background: var(--bg);
+      border: 1.5px solid var(--line-mid);
+      color: var(--ink-dim);
+      cursor: default;
+      transition: background .12s, border-color .12s, color .12s;
+    }
+    .lang-pill:hover { background: var(--bg-2); }
+    .lang-pill.selected {
+      background: var(--accent-soft);
+      border-color: var(--accent);
+      color: var(--accent-deep);
+    }
+
+    .mic-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 13px 18px;
+      border-bottom: 1px solid var(--line);
+      cursor: default;
+      transition: background .12s;
+    }
+    .mic-row:last-child { border-bottom: none; }
+    .mic-row:hover { background: var(--bg); }
+    .mic-radio {
+      width: 16px; height: 16px;
+      border-radius: 50%;
+      border: 2px solid var(--line-strong);
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+      transition: border-color .12s;
+    }
+    .mic-radio.on { border-color: var(--accent); }
+    .mic-radio.on::after {
+      content: '';
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: var(--accent);
+    }
+    .mic-label { font-size: 14.5px; color: var(--ink-2); font-weight: 500; }
+
+    /* ── Placeholder ─────────────────────────────────── */
+    .placeholder {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex: 1;
+      color: var(--ink-mute);
+      font-size: 14px;
+    }
+
+    /* Chevron */
+    .chev { transition: transform .2s var(--ease); }
+    .chev.open { transform: rotate(180deg); }
+
+    /* ── Dictionary ──────────────────────────────────── */
+    .btn-primary {
+      padding: 9px 18px;
+      border-radius: 9px;
+      font-size: 14px;
+      font-weight: 600;
+      background: var(--ink);
+      color: #fff;
+      border: none;
+      cursor: default;
+      font-family: var(--sans);
+      transition: background .12s;
+    }
+    .btn-primary:hover { background: var(--ink-2); }
+
+    .dict-box {
+      background: var(--surface);
+      border: 1px solid var(--line-mid);
+      border-radius: 12px;
+      overflow: hidden;
+      max-width: 620px;
+    }
+    .dict-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--line);
+      transition: background .12s;
+    }
+    .dict-row:last-child { border-bottom: none; }
+    .dict-row:hover { background: var(--bg); }
+    .dict-word {
+      flex: 1;
+      font-size: 14.5px;
+      font-weight: 500;
+      color: var(--ink-2);
+    }
+    .dict-actions {
+      display: flex;
+      gap: 3px;
+      opacity: 0;
+      transition: opacity .13s;
+    }
+    .dict-row:hover .dict-actions { opacity: 1; }
+
+    /* ── Modal ───────────────────────────────────────── */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(24,21,15,0.45);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      padding: 20px;
+    }
+    .modal {
+      background: var(--surface);
+      border-radius: 14px;
+      padding: 28px 28px 24px;
+      width: 100%;
+      max-width: 420px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.18);
+    }
+    .modal-title {
+      font-size: 17px;
+      font-weight: 600;
+      color: var(--ink);
+      margin-bottom: 18px;
+      letter-spacing: -0.01em;
+    }
+    .modal-body {
+      font-size: 14.5px;
+      color: var(--ink-dim);
+      line-height: 1.6;
+      margin-bottom: 22px;
+    }
+    .modal-body strong { color: var(--ink); font-weight: 600; }
+    .modal-input {
+      width: 100%;
+      padding: 10px 13px;
+      border-radius: 8px;
+      border: 1.5px solid var(--line-mid);
+      font-size: 14.5px;
+      font-family: var(--sans);
+      color: var(--ink);
+      background: var(--bg);
+      margin-bottom: 20px;
+      outline: none;
+      transition: border-color .13s;
+    }
+    .modal-input:focus { border-color: var(--ink-dim); }
+    .modal-input::placeholder { color: var(--ink-mute); }
+    .modal-actions {
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+    }
+    .btn-cancel {
+      padding: 9px 18px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 500;
+      background: var(--bg-2);
+      border: 1px solid var(--line-mid);
+      color: var(--ink-dim);
+      cursor: default;
+      font-family: var(--sans);
+      transition: background .12s;
+    }
+    .btn-cancel:hover { background: var(--bg-3); }
+    .btn-danger {
+      padding: 9px 18px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      background: #dc2626;
+      color: #fff;
+      border: none;
+      cursor: default;
+      font-family: var(--sans);
+      transition: background .12s;
+    }
+    .btn-danger:hover { background: #b91c1c; }
+
+    /* ── Style page ──────────────────────────────────── */
+    .style-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      max-width: 860px;
+    }
+    .style-card {
+      border: 2px solid var(--line-mid);
+      border-radius: 14px;
+      padding: 24px 22px 28px;
+      cursor: default;
+      transition: border-color .15s, background .15s;
+      background: var(--surface);
+      min-height: 260px;
+      display: flex;
+      flex-direction: column;
+    }
+    .style-card:hover { border-color: var(--line-strong); }
+    .style-card.selected { border-color: var(--accent); }
+    .style-card-name {
+      font-family: var(--display);
+      font-size: 30px;
+      font-weight: 500;
+      color: var(--ink);
+      letter-spacing: -0.01em;
+      margin-bottom: 4px;
+    }
+    .style-card-sub {
+      font-size: 12.5px;
+      color: var(--ink-mute);
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-bottom: 18px;
+    }
+    .style-card-example {
+      flex: 1;
+      font-size: 14px;
+      color: var(--ink-dim);
+      line-height: 1.65;
+      border-top: 1px solid var(--line);
+      padding-top: 16px;
+    }
+
+    /* ── Settings v2 ─────────────────────────────────── */
+    .shortcut-card {
+      background: var(--bg);
+      border: 1px solid var(--line-mid);
+      border-radius: 12px;
+      padding: 18px 20px 16px;
+      margin-bottom: 10px;
+    }
+    .shortcut-card-title {
+      font-size: 14.5px;
+      font-weight: 600;
+      color: var(--ink);
+    }
+    .shortcut-card-sub {
+      font-size: 13px;
+      color: var(--ink-mute);
+      margin-top: 2px;
+      margin-bottom: 14px;
+    }
+    .shortcut-pill-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .shortcut-pill {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--surface);
+      border: 1.5px solid var(--line-strong);
+      border-radius: 8px;
+      padding: 8px 13px;
+      font-size: 13.5px;
+      font-weight: 600;
+      color: var(--ink-2);
+      flex: 1;
+    }
+    .shortcut-pill.capturing {
+      border-color: var(--accent);
+      background: var(--accent-soft);
+      color: var(--accent-deep);
+      animation: pulse 1.2s infinite;
+    }
+    .shortcut-edit-btn {
+      width: 34px; height: 34px;
+      border-radius: 7px;
+      border: 1.5px solid var(--line-mid);
+      background: var(--surface);
+      color: var(--ink-dim);
+      display: flex; align-items: center; justify-content: center;
+      cursor: default;
+      transition: background .12s;
+    }
+    .shortcut-edit-btn:hover { background: var(--bg-2); }
+    .shortcut-edit-btn.active {
+      border-color: var(--accent);
+      background: var(--accent-soft);
+      color: var(--accent-deep);
+    }
+    .reset-btn {
+      display: block;
+      margin: 20px auto 0;
+      padding: 9px 24px;
+      border-radius: 9px;
+      font-size: 14px;
+      font-weight: 500;
+      background: var(--bg-2);
+      border: 1px solid var(--line-mid);
+      color: var(--ink-dim);
+      cursor: default;
+      font-family: var(--sans);
+      transition: background .12s;
+    }
+    .reset-btn:hover { background: var(--bg-3); }
+
+    .mic-settings-row {
+      display: flex;
+      align-items: center;
+      padding: 16px 18px;
+    }
+    .mic-settings-info { flex: 1; }
+    .mic-settings-label { font-size: 14.5px; font-weight: 600; color: var(--ink); }
+    .mic-settings-sub { font-size: 13px; color: var(--ink-mute); margin-top: 2px; }
+
+    .mic-option {
+      border: 2px solid var(--line-mid);
+      border-radius: 10px;
+      padding: 14px 16px;
+      margin-bottom: 10px;
+      cursor: default;
+      transition: border-color .13s, background .13s;
+    }
+    .mic-option:last-child { margin-bottom: 0; }
+    .mic-option:hover { border-color: var(--line-strong); }
+    .mic-option.selected { border-color: var(--accent); background: var(--accent-soft); }
+    .mic-option-name { font-size: 14.5px; font-weight: 600; color: var(--ink); }
+    .mic-option-sub { font-size: 13px; color: var(--ink-mute); margin-top: 3px; }
+
+    /* ── Support modal ───────────────────────────────── */
+    .modal-lg { max-width: 500px; }
+    .modal-close {
+      position: absolute; top: 20px; right: 20px;
+      width: 28px; height: 28px;
+      border-radius: 6px;
+      border: none;
+      background: transparent;
+      color: var(--ink-mute);
+      display: flex; align-items: center; justify-content: center;
+      cursor: default;
+      transition: background .12s, color .12s;
+    }
+    .modal-close:hover { background: var(--bg-2); color: var(--ink); }
+    .modal-relative { position: relative; }
+    .support-select {
+      width: 100%;
+      padding: 10px 34px 10px 13px;
+      border-radius: 8px;
+      border: 1.5px solid var(--line-mid);
+      font-size: 14px;
+      font-family: var(--sans);
+      color: var(--ink);
+      background: var(--bg);
+      margin-bottom: 12px;
+      outline: none;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12' fill='none'%3E%3Cpath d='M2 4l4 4 4-4' stroke='%23504840' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 13px center;
+      cursor: default;
+    }
+    .support-select:focus { border-color: var(--ink-dim); }
+    .support-textarea {
+      width: 100%;
+      padding: 12px 13px;
+      border-radius: 8px;
+      border: 1.5px solid var(--line-mid);
+      font-size: 14px;
+      font-family: var(--sans);
+      color: var(--ink);
+      background: var(--bg);
+      resize: none;
+      height: 130px;
+      outline: none;
+      transition: border-color .13s;
+      line-height: 1.6;
+    }
+    .support-textarea:focus { border-color: var(--ink-dim); }
+    .support-textarea::placeholder { color: var(--ink-mute); }
+    .support-footer {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-top: 14px;
+    }
+    .attach-btn {
+      width: 36px; height: 36px;
+      border-radius: 8px;
+      border: 1px solid var(--line-mid);
+      background: var(--bg-2);
+      color: var(--ink-dim);
+      display: flex; align-items: center; justify-content: center;
+      cursor: default;
+      transition: background .12s;
+      flex-shrink: 0;
+      overflow: hidden;
+      position: relative;
+    }
+    .attach-btn:hover { background: var(--bg-3); }
+    .attach-btn input[type=file] {
+      position: absolute; inset: 0; opacity: 0; cursor: default; font-size: 0;
+    }
+    .attach-file-name {
+      font-size: 13px;
+      color: var(--ink-mute);
+      flex: 1;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .success-icon {
+      width: 48px; height: 48px;
+      border-radius: 50%;
+      background: var(--accent-soft);
+      color: var(--accent-deep);
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 16px;
+    }
+  </style>
+</head>
+<body>
+<div id="root"></div>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" crossorigin></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" crossorigin></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" crossorigin></script>
+
+<script type="text/babel">
+/* ── Pixel rabbit mark (inlined from mascot.jsx) ── */
+const MARK_GRID = [
+  "CC....CC..",
+  "CC....CC..",
+  "CCC..CCC..",
+  "CCCCCCCC..",
+  "CCCCCCCC..",
+  "CDCCCCDC..",
+  "CCCNNCCC..",
+  "CCCCCCCC..",
+  ".CCCCCC...",
+  "..........",
+];
+function RabbitMark({ size = 22 }) {
+  const cells = 10, unit = 100 / cells, rects = [];
+  for (let y = 0; y < MARK_GRID.length; y++) {
+    for (let x = 0; x < MARK_GRID[y].length; x++) {
+      const ch = MARK_GRID[y][x];
+      if (ch === '.') continue;
+      const fill = ch === 'D' ? 'rgba(21,16,11,0.4)' : ch === 'N' ? '#15100B' : 'currentColor';
+      rects.push(<rect key={`${x}-${y}`} x={x*unit} y={y*unit} width={unit+0.5} height={unit+0.5} fill={fill} shapeRendering="crispEdges"/>);
+    }
+  }
+  return (
+    <span style={{ width:size, height:size, display:'inline-block', lineHeight:0 }}>
+      <svg viewBox="0 0 100 100" width={size} height={size} shapeRendering="crispEdges">{rects}</svg>
+    </span>
+  );
+}
+</script>
+
+<script type="text/babel">
+const { useState, useEffect, useRef } = React;
+
+/* ── Mock data ───────────────────────────────────────── */
+const SEED = [
+  { id:1,  time:'4:12 PM',  group:'today',      text:"Draft a subject line for this week's newsletter — something about using AI to build passive income without needing to code." },
+  { id:2,  time:'2:47 PM',  group:'today',      text:"Add to my to-do: review the brand deal proposal from Notion and send a counter offer by end of the week. Budget should be at least three thousand." },
+  { id:3,  time:'11:23 AM', group:'today',      text:"Note to self: the YouTube video about AI tools for creators hit 40K views in three days. Consider a follow-up on the monetisation angle." },
+  { id:4,  time:'9:04 AM',  group:'today',      text:"Find me five newsletter subject lines that use curiosity gaps. Relevant to AI tools for non-technical people." },
+  { id:5,  time:'8:30 AM',  group:'today',      text:"Remind me to check the open rate on this week's Breadcrumb issue — it went out this morning." },
+  { id:6,  time:'7:55 AM',  group:'today',      text:"Write a quick tweet thread about the three AI tools I used this week to save time on content creation." },
+  { id:7,  time:'7:20 AM',  group:'today',      text:"Look into the new ChatGPT voice mode update — see if it affects the Voice Rabbit positioning for my audience." },
+  { id:8,  time:'6:50 AM',  group:'today',      text:"Schedule a calendar block on Friday afternoon to plan next month's YouTube content calendar." },
+  { id:9,  time:'6:10 AM',  group:'today',      text:"Draft an intro paragraph for the newsletter section about AI replacing junior writers — keep it balanced." },
+  { id:10, time:'5:40 AM',  group:'today',      text:"Check if Arcads has responded to the last email before I follow up again this week." },
+  { id:11, time:'5:00 AM',  group:'today',      text:"Summarise what I know about the new Claude model and turn it into a two-sentence explainer for beginners." },
+  { id:12, time:'8:45 PM',  group:'yesterday',  text:"Draft a cold email to Arcads pitching a six-month brand deal. Mention 165K YouTube subscribers and 11K newsletter subscribers with 18–20% open rate." },
+  { id:13, time:'3:10 PM',  group:'yesterday',  text:"Remind me to follow up with the Notion sponsorship team — they went quiet after I sent the media kit two weeks ago." },
+  { id:14, time:'10:30 AM', group:'yesterday',  text:"Summarise this article about the new OpenAI model and pull out the three most relevant points for my audience of AI beginners." },
+  { id:15, time:'6:20 PM',  group:'2026-04-18', text:"Write a YouTube description for the new video about building a Notion dashboard with AI. Keep it punchy and include three keywords." },
+  { id:16, time:'2:45 PM',  group:'2026-04-18', text:"Can you pull together a short bio I can send to the podcast host? 150 words, focused on the YouTube channel and newsletter." },
+  { id:17, time:'10:05 AM', group:'2026-04-18', text:"Draft three different hooks for a YouTube short about AI tools that save time. Each one should be under 15 words." },
+  { id:18, time:'4:50 PM',  group:'2026-04-17', text:"Look up the best time to post on YouTube for an Australian audience targeting global viewers." },
+  { id:19, time:'1:30 PM',  group:'2026-04-17', text:"Summarise the key takeaways from the Tim Ferriss podcast episode on creator monetisation — three bullet points max." },
+];
+
+/* ── Dictionary seed data ────────────────────────────── */
+const DICT_SEED = [
+  { id:1, word:'Breadcrumb' },
+  { id:2, word:'Arcads' },
+  { id:3, word:'Kittl' },
+  { id:4, word:'Seedance' },
+  { id:5, word:'Jason Liando' },
+];
+
+/* ── Icons ───────────────────────────────────────────── */
+const I = {
+  Home: () => (
+    <svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M1.5 6.2L7.5 1.5l6 4.7v7.3a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V6.2z"/>
+      <path d="M5.5 14.5V9.5h4v5"/>
+    </svg>
+  ),
+  Book: () => (
+    <svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M3 2h8.5a1 1 0 0 1 1 1v9.5a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1z"/>
+      <path d="M5 6h5M5 8.5h3.5"/>
+    </svg>
+  ),
+  Pen: () => (
+    <svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M10.5 2a1.5 1.5 0 0 1 2.5 1.5L5 11.5 2 12.5l1-3L10.5 2z"/>
+    </svg>
+  ),
+  Settings: () => (
+    <svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="7.5" cy="7.5" r="2.2"/>
+      <path d="M7.5 1v1.5M7.5 12.5V14M1 7.5h1.5M12.5 7.5H14M3 3l1.1 1.1M10.9 10.9 12 12M12 3l-1.1 1.1M4.1 10.9 3 12"/>
+    </svg>
+  ),
+  Gift: () => (
+    <svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="1.5" y="6.5" width="12" height="7" rx="1"/>
+      <rect x="1" y="4" width="13" height="3" rx="1"/>
+      <path d="M7.5 13.5V4M7.5 4S7.5 1.5 5 1.5 4 4 7.5 4zM7.5 4S7.5 1.5 10 1.5 11 4 7.5 4z"/>
+    </svg>
+  ),
+  Help: () => (
+    <svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="7.5" cy="7.5" r="6"/>
+      <path d="M5.5 5.8A2 2 0 0 1 9.5 6c0 1.5-2 1.8-2 3"/>
+      <circle cx="7.5" cy="11.2" r=".5" fill="currentColor" stroke="none"/>
+    </svg>
+  ),
+  Mic: () => (
+    <svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+      <rect x="5" y="1.5" width="5" height="7" rx="2.5"/>
+      <path d="M2.5 7.5Q2.5 11 7.5 11Q12.5 11 12.5 7.5"/>
+      <path d="M7.5 11V14M5.5 14h4"/>
+    </svg>
+  ),
+  Copy: () => (
+    <svg width="19" height="19" viewBox="0 0 13 13" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="4.5" y="4.5" width="7" height="7" rx="1.2"/>
+      <path d="M8.5 4.5V3a1 1 0 0 0-1-1H3a1 1 0 0 0-1 1v5.5a1 1 0 0 0 1 1H4.5"/>
+    </svg>
+  ),
+  Trash: () => (
+    <svg width="19" height="19" viewBox="0 0 13 13" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M1.5 3.5h10M4.5 3.5V2.5a.5.5 0 0 1 .5-.5h2.5a.5.5 0 0 1 .5.5v1M4 3.5l.7 7.5h4.6L10 3.5"/>
+    </svg>
+  ),
+  Check: () => (
+    <svg width="19" height="19" viewBox="0 0 13 13" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M2 6.5l3 3 6-6"/>
+    </svg>
+  ),
+  Edit: () => (
+    <svg width="19" height="19" viewBox="0 0 13 13" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M9 2a1.2 1.2 0 0 1 2 2L4.5 10.5 2 11l.5-2.5L9 2z"/>
+    </svg>
+  ),
+  Chev: ({ open }) => (
+    <svg width="11" height="11" viewBox="0 0 11 11" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" className={`chev ${open ? 'open' : ''}`}>
+      <path d="M2 4l3.5 3.5L9 4"/>
+    </svg>
+  ),
+};
+
+/* ── Group label formatter ───────────────────────────── */
+const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+
+function formatGroupLabel(group) {
+  if (group === 'today')     return 'Today';
+  if (group === 'yesterday') return 'Yesterday';
+  const [y, m, d] = group.split('-').map(Number);
+  return `${MONTHS[m - 1]} ${d}, ${y}`;
+}
+
+function getOrderedGroups(history) {
+  const map = {};
+  history.forEach(e => {
+    if (!map[e.group]) map[e.group] = [];
+    map[e.group].push(e);
+  });
+  return Object.keys(map).sort((a, b) => {
+    if (a === 'today')     return -1;
+    if (b === 'today')     return  1;
+    if (a === 'yesterday') return -1;
+    if (b === 'yesterday') return  1;
+    return b.localeCompare(a); // newer dates first
+  }).map(key => ({ key, label: formatGroupLabel(key), items: map[key] }));
+}
+
+
+function RabbitIcon({ size = 24 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 305.43 305.43" fill="white" style={{flexShrink:0}}>
+      <path d="M 469.00 971.87 C 360.19 966.72 279.10 934.42 238.38 880.00 C 205.47 836.02 198.10 784.21 215.13 716.50 C 223.86 681.77 238.31 647.96 259.25 613.23 C 268.53 597.84 268.12 603.88 262.41 566.50 C 254.74 516.36 242.27 461.32 227.85 414.00 C 217.57 380.27 203.97 344.14 181.55 291.00 C 162.41 245.65 152.68 210.03 150.55 177.50 C 149.16 156.18 153.41 133.03 161.95 115.50 C 172.55 93.72 190.16 76.76 214.50 64.88 C 229.02 57.80 237.63 55.78 253.50 55.75 C 268.64 55.72 279.13 58.02 294.90 64.84 C 341.26 84.88 375.63 121.86 406.10 184.50 C 441.89 258.08 464.89 350.73 474.05 458.23 C 477.08 493.75 476.65 491.33 479.83 490.56 C 481.30 490.21 492.45 489.66 504.60 489.33 L 526.71 488.73 L 527.38 476.12 C 530.26 421.91 543.15 352.18 559.61 301.84 C 581.33 235.38 604.98 201.15 637.00 189.84 C 642.56 187.87 645.46 187.54 657.00 187.55 C 672.43 187.56 673.53 187.82 699.50 197.46 C 722.52 206.01 736.04 208.97 759.00 210.52 C 787.08 212.41 805.90 220.92 822.46 239.22 C 830.35 247.94 834.05 253.83 841.98 270.24 C 856.19 299.68 866.24 332.53 871.12 365.50 C 873.03 378.44 872.77 408.18 870.64 419.74 C 866.21 443.82 858.38 459.65 844.24 473.14 C 835.67 481.30 826.76 486.49 815.00 490.15 C 808.71 492.11 805.48 492.47 795.00 492.39 C 776.29 492.24 759.65 487.43 742.87 477.31 C 737.86 474.30 733.44 472.21 733.04 472.66 C 732.64 473.12 730.62 481.15 728.56 490.50 C 726.49 499.85 721.70 520.10 717.90 535.50 C 714.10 550.90 710.60 565.13 710.13 567.12 C 709.32 570.55 709.59 571.12 715.23 578.12 C 732.48 599.53 753.35 634.98 767.12 666.28 C 781.28 698.44 791.98 739.11 795.12 772.69 C 800.09 825.76 777.36 876.72 733.00 911.93 C 675.54 957.54 587.66 977.49 469.00 971.87 Z M 561.50 931.09 C 611.10 925.27 643.67 916.67 675.62 900.95 C 715.38 881.39 742.61 851.13 751.62 816.50 C 758.23 791.12 755.44 759.46 742.94 718.00 C 730.02 675.17 706.73 631.53 679.46 599.05 C 674.17 592.75 669.20 586.36 668.42 584.85 C 665.61 579.41 666.72 572.26 676.53 532.82 C 681.77 511.74 688.53 483.25 691.54 469.50 C 694.56 455.75 697.24 443.55 697.50 442.40 C 697.83 440.88 695.46 437.02 688.97 428.52 C 672.83 407.38 659.24 384.22 648.52 359.62 C 642.05 344.75 632.01 315.73 632.00 311.88 C 632.00 308.03 634.74 300.92 637.28 298.15 C 644.85 289.92 660.00 290.26 667.20 298.82 C 668.78 300.70 671.68 307.57 674.54 316.21 C 691.03 366.02 721.59 413.56 751.50 435.92 C 760.93 442.98 774.86 449.70 784.00 451.61 C 807.52 456.53 822.54 446.10 829.51 420.00 C 832.13 410.17 832.69 382.62 830.56 368.10 C 825.99 336.91 810.97 292.76 798.63 274.19 C 787.36 257.24 776.45 251.09 755.00 249.58 C 726.38 247.57 714.59 245.09 689.76 235.85 C 667.57 227.60 664.41 226.70 657.50 226.68 C 640.80 226.63 625.02 244.15 610.16 279.25 C 588.64 330.09 571.80 409.54 567.23 481.87 C 566.48 493.74 566.53 494.28 568.47 495.03 C 569.59 495.47 575.22 497.26 581.00 499.02 C 594.33 503.07 607.32 508.28 612.29 511.57 C 616.76 514.53 620.99 522.54 620.97 528.00 C 620.93 538.92 608.72 549.58 598.57 547.57 C 596.88 547.23 590.43 544.91 584.24 542.41 C 570.71 536.94 554.34 532.68 538.32 530.44 C 521.46 528.09 490.32 528.89 473.00 532.13 C 466.12 533.41 457.48 534.46 453.79 534.45 C 447.98 534.44 446.52 534.04 442.85 531.46 C 435.36 526.20 433.98 522.01 432.40 499.79 C 426.24 413.21 415.27 347.16 396.49 283.50 C 381.50 232.70 362.72 191.63 339.00 157.78 C 330.80 146.08 310.04 125.07 299.30 117.62 C 276.20 101.59 256.67 96.70 239.19 102.57 C 228.71 106.09 221.42 110.75 213.87 118.76 C 202.35 130.98 197.15 145.43 196.27 167.71 C 195.41 189.19 198.94 209.21 208.38 236.50 C 213.15 250.29 215.19 255.37 230.24 291.00 C 268.99 382.70 292.56 467.54 308.58 572.89 C 313.36 604.37 313.05 606.91 302.63 621.00 C 269.94 665.20 246.52 733.09 246.73 783.00 C 246.97 840.12 281.38 883.23 347.42 909.14 C 373.60 919.42 414.28 928.20 448.50 930.97 C 455.65 931.55 463.52 932.19 466.00 932.39 C 475.30 933.16 552.87 932.10 561.50 931.09 Z M 442.36 768.91 C 437.31 767.45 429.87 761.76 426.38 756.68 C 413.71 738.30 415.22 709.78 429.53 697.19 C 446.37 682.36 468.96 695.69 474.74 723.87 C 478.80 743.59 469.55 764.09 454.61 768.52 C 449.06 770.17 446.94 770.24 442.36 768.91 Z M 638.63 756.97 C 627.89 753.75 618.69 740.91 615.33 724.46 C 611.81 707.18 618.96 688.19 631.41 681.77 C 636.94 678.92 646.02 678.90 651.52 681.74 C 665.34 688.86 674.88 710.21 672.13 727.88 C 668.80 749.35 654.53 761.73 638.63 756.97 Z" transform="matrix(0.246838 0 0 0.246837 152.716702 152.716509) matrix(1 0 0 1 0 0) translate(-511.349083, -514.273001)"/>
+    </svg>
+  );
+}
+
+function RecordingPill({ onStop, mode }) {
+  const isHandsfree = mode === 'handsfree';
+  return (
+    <div className="rec-pill">
+      <RabbitIcon size={20}/>
+      <div className="rec-waveform">
+        {BAR_PROFILE.map(({ min, max, dur }, i) => (
+          <div
+            key={i}
+            className="rec-bar"
+            style={{
+              '--min': min + 'px',
+              '--max': max + 'px',
+              '--dur': dur + 's',
+              animationDelay: (i * 0.08) + 's',
+              height: min + 'px',
+            }}
+          />
+        ))}
+      </div>
+      {isHandsfree && (
+        <button className="rec-stop" onClick={onStop} title="Stop recording">
+          <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor">
+            <rect x="0.5" y="0.5" width="7" height="7" rx="1.5"/>
+          </svg>
+        </button>
+      )}
+    </div>
+  );
+}
+
+/* ── PageHeader ──────────────────────────────────────── */
+function PageHeader({ title, sub, action, contentWidth }) {
+  return (
+    <div className="page-header">
+      <div className="page-header-inner" style={contentWidth ? { maxWidth: contentWidth } : {}}>
+        <div className="page-header-left">
+          <div className="page-header-title">{title}</div>
+          {sub && <div className="page-header-sub">{sub}</div>}
+        </div>
+        {action && <div className="page-header-action">{action}</div>}
+      </div>
+    </div>
+  );
+}
+
+/* ── Delete Confirm Modal ────────────────────────────── */
+function DeleteConfirmModal({ label, onConfirm, onCancel }) {
+  return (
+    <div className="modal-overlay" onClick={onCancel}>
+      <div className="modal" onClick={e => e.stopPropagation()}>
+        <div className="modal-title">Delete permanently?</div>
+        <div className="modal-body">
+          {label
+            ? <><strong>"{label}"</strong> will be deleted permanently. This cannot be undone.</>
+            : <>This will be deleted permanently. This cannot be undone.</>
+          }
+        </div>
+        <div className="modal-actions">
+          <button className="btn-cancel" onClick={onCancel}>Cancel</button>
+          <button className="btn-danger" onClick={onConfirm}>Delete</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── History row ─────────────────────────────────────── */
+function HRow({ item, onDelete }) {
+  const [copied, setCopied] = useState(false);
+  const [confirming, setConfirming] = useState(false);
+  function copy() {
+    navigator.clipboard.writeText(item.text).catch(() => {});
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1600);
+  }
+  return (
+    <>
+      <div className="h-row">
+        <div className="h-time">{item.time}</div>
+        <div className="h-text">{item.text}</div>
+        <div className="h-actions">
+          <button className={`act-btn ${copied ? 'copied' : ''}`} onClick={copy}>
+            {copied ? <I.Check/> : <I.Copy/>}
+          </button>
+          <button className="act-btn del" onClick={() => setConfirming(true)}>
+            <I.Trash/>
+          </button>
+        </div>
+      </div>
+      {confirming && (
+        <DeleteConfirmModal
+          onConfirm={() => { setConfirming(false); onDelete(item.id); }}
+          onCancel={() => setConfirming(false)}
+        />
+      )}
+    </>
+  );
+}
+
+/* ── History group ───────────────────────────────────── */
+const PAGE_SIZE = 10;
+function HistoryGroup({ label, items, onDelete }) {
+  const [showAll, setShowAll] = useState(false);
+  if (!items.length) return null;
+  const visible = showAll ? items : items.slice(0, PAGE_SIZE);
+  const hidden  = items.length - PAGE_SIZE;
+  return (
+    <div className="date-group">
+      <div className="date-label">{label}</div>
+      <div className="history-box">
+        {visible.map(e => <HRow key={e.id} item={e} onDelete={onDelete}/>)}
+        {!showAll && hidden > 0 && (
+          <div className="show-more-row" onClick={() => setShowAll(true)}>
+            Show {hidden} more
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ── Home ────────────────────────────────────────────── */
+function HomePage() {
+  const [history, setHistory] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('vr-history-v2')) || SEED; }
+    catch { return SEED; }
+  });
+  useEffect(() => { localStorage.setItem('vr-history-v2', JSON.stringify(history)); }, [history]);
+  function remove(id) { setHistory(h => h.filter(e => e.id !== id)); }
+
+  const now  = new Date();
+  const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const dateStr = `${days[now.getDay()]}, ${now.getDate()} ${MONTHS[now.getMonth()]} ${now.getFullYear()}`;
+  const groups  = getOrderedGroups(history);
+
+  return (
+    <>
+      <PageHeader title="Welcome back, Jason." sub={dateStr} contentWidth={716}/>
+      <div className="page-scroll">
+        <div className="history-wrap">
+          {history.length === 0 ? (
+            <div className="empty">
+              <svg width="40" height="40" viewBox="0 0 40 40" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round">
+                <rect x="8" y="11" width="24" height="20" rx="3"/>
+                <path d="M14 20h12M14 25h8M20 7v4"/>
+              </svg>
+              <p>No transcriptions yet.</p>
+              <small>Press your hotkey to start recording.</small>
+            </div>
+          ) : groups.map(g => (
+            <HistoryGroup key={g.key} label={g.label} items={g.items} onDelete={remove}/>
+          ))}
+        </div>
+      </div>
+    </>
+  );
+}
+
+/* ── Add / Edit Word Modal ───────────────────────────── */
+function WordModal({ title, initial, onSave, onCancel }) {
+  const [value, setValue] = useState(initial || '');
+  const inputRef = useRef(null);
+  useEffect(() => { inputRef.current?.focus(); }, []);
+  function submit() {
+    const trimmed = value.trim();
+    if (trimmed) onSave(trimmed);
+  }
+  function onKey(e) {
+    if (e.key === 'Enter') submit();
+    if (e.key === 'Escape') onCancel();
+  }
+  return (
+    <div className="modal-overlay" onClick={onCancel}>
+      <div className="modal" onClick={e => e.stopPropagation()}>
+        <div className="modal-title">{title}</div>
+        <input
+          ref={inputRef}
+          className="modal-input"
+          placeholder="Add a new word"
+          value={value}
+          onChange={e => setValue(e.target.value)}
+          onKeyDown={onKey}
+        />
+        <div className="modal-actions">
+          <button className="btn-cancel" onClick={onCancel}>Cancel</button>
+          <button className="btn-primary" onClick={submit} disabled={!value.trim()}>
+            {initial ? 'Save' : 'Add word'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── Dictionary page ─────────────────────────────────── */
+function DictionaryPage() {
+  const [words, setWords] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('vr-dictionary-v1')) || DICT_SEED; }
+    catch { return DICT_SEED; }
+  });
+  const [modal, setModal] = useState(null); // null | { type:'add' } | { type:'edit', id, word } | { type:'delete', id, word }
+
+  useEffect(() => { localStorage.setItem('vr-dictionary-v1', JSON.stringify(words)); }, [words]);
+
+  function addWord(word) {
+    setWords(w => [{ id: Date.now(), word }, ...w]);
+    setModal(null);
+  }
+  function editWord(id, word) {
+    setWords(w => w.map(e => e.id === id ? { ...e, word } : e));
+    setModal(null);
+  }
+  function deleteWord(id) {
+    setWords(w => w.filter(e => e.id !== id));
+    setModal(null);
+  }
+
+  return (
+    <>
+      <PageHeader
+        title="Dictionary"
+        contentWidth={620}
+        action={<button className="btn-primary" onClick={() => setModal({ type:'add' })}>Add new</button>}
+      />
+      <div className="page-scroll">
+      {words.length === 0 ? (
+        <div className="empty">
+          <svg width="40" height="40" viewBox="0 0 40 40" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round">
+            <path d="M8 6h18a2 2 0 0 1 2 2v24a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2z"/>
+            <path d="M13 15h14M13 21h10M13 27h7"/>
+          </svg>
+          <p>No words yet.</p>
+          <small>Add words the AI should always recognise.</small>
+        </div>
+      ) : (
+        <div className="dict-box">
+          {words.map(e => (
+            <div className="dict-row" key={e.id}>
+              <div className="dict-word">{e.word}</div>
+              <div className="dict-actions">
+                <button className="act-btn" onClick={() => setModal({ type:'edit', id:e.id, word:e.word })}>
+                  <I.Edit/>
+                </button>
+                <button className="act-btn del" onClick={() => setModal({ type:'delete', id:e.id, word:e.word })}>
+                  <I.Trash/>
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {modal?.type === 'add' && (
+        <WordModal title="Add to dictionary" onSave={addWord} onCancel={() => setModal(null)}/>
+      )}
+      {modal?.type === 'edit' && (
+        <WordModal
+          title="Edit word"
+          initial={modal.word}
+          onSave={word => editWord(modal.id, word)}
+          onCancel={() => setModal(null)}
+        />
+      )}
+      {modal?.type === 'delete' && (
+        <DeleteConfirmModal
+          label={modal.word}
+          onConfirm={() => deleteWord(modal.id)}
+          onCancel={() => setModal(null)}
+        />
+      )}
+      </div>
+    </>
+  );
+}
+
+/* ── Style page ──────────────────────────────────────── */
+const STYLES = [
+  {
+    id: 'formal',
+    name: 'Formal.',
+    sub: 'Caps + Punctuation',
+    example: 'Hey, are you free for lunch tomorrow? Let\'s do 12 if that works for you.',
+  },
+  {
+    id: 'casual',
+    name: 'Casual',
+    sub: 'Caps + Less punctuation',
+    example: 'Hey are you free for lunch tomorrow let\'s do 12 if that works for you',
+  },
+  {
+    id: 'very-casual',
+    name: 'very casual',
+    sub: 'No caps + Less punctuation',
+    example: 'hey are you free for lunch tomorrow let\'s do 12 if that works for you',
+  },
+];
+
+function StylePage() {
+  const [selected, setSelected] = useState(() =>
+    localStorage.getItem('vr-style') || 'formal'
+  );
+  function pick(id) {
+    setSelected(id);
+    localStorage.setItem('vr-style', id);
+  }
+  return (
+    <>
+      <PageHeader title="Writing Style" contentWidth={860}/>
+      <div className="page-scroll">
+        <div className="style-grid">
+          {STYLES.map(s => (
+            <div
+              key={s.id}
+              className={`style-card ${selected === s.id ? 'selected' : ''}`}
+              onClick={() => pick(s.id)}
+            >
+              <div className="style-card-name">{s.name}</div>
+              <div className="style-card-sub">{s.sub}</div>
+              <div className="style-card-example">{s.example}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </>
+  );
+}
+
+/* ── Settings ────────────────────────────────────────── */
+const LANGS = ['English','Spanish','French','German','Portuguese','Italian','Japanese','Korean','Chinese','Dutch','Arabic','Hindi'];
+const DEFAULT_HOTKEYS = { push: '⌥ Space', handsfree: 'fn Space' };
+
+function MicPickerModal({ mics, selected, onSelect, onClose }) {
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal modal-relative" style={{maxWidth:440}} onClick={e => e.stopPropagation()}>
+        <div className="modal-title" style={{marginBottom:20}}>Microphone</div>
+        <button className="modal-close" onClick={onClose}>
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M2 2l10 10M12 2 2 12"/></svg>
+        </button>
+        {mics.map((m, i) => (
+          <div key={i} className={`mic-option ${selected === m ? 'selected' : ''}`} onClick={() => onSelect(m)}>
+            <div className="mic-option-name">{m}</div>
+            {i === 0 && <div className="mic-option-sub">Default device</div>}
+          </div>
+        ))}
+        <div style={{marginTop:20,display:'flex',justifyContent:'flex-end'}}>
+          <button className="btn-primary" onClick={onClose}>Done</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function SettingsPage() {
+  const [hotkeys, setHotkeys] = useState({ ...DEFAULT_HOTKEYS });
+  const [capturing, setCapturing] = useState(null);
+  const [mic, setMic]       = useState(null);
+  const [mics, setMics]     = useState([]);
+  const [micModal, setMicModal] = useState(false);
+
+  useEffect(() => {
+    navigator.mediaDevices?.enumerateDevices?.().then(devs => {
+      const inputs = devs.filter(d => d.kind === 'audioinput');
+      if (inputs.length) {
+        const labels = inputs.map(d => d.label || `Microphone ${d.deviceId.slice(0,6)}`);
+        setMics(labels); setMic(labels[0]);
+      } else {
+        const fallback = ['Built-in Microphone', 'External Microphone'];
+        setMics(fallback); setMic(fallback[0]);
+      }
+    }).catch(() => {
+      const fallback = ['Built-in Microphone', 'External Microphone'];
+      setMics(fallback); setMic(fallback[0]);
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!capturing) return;
+    function onKey(e) {
+      e.preventDefault();
+      const mods = [];
+      if (e.metaKey)  mods.push('⌘');
+      if (e.ctrlKey)  mods.push('⌃');
+      if (e.altKey)   mods.push('⌥');
+      if (e.shiftKey) mods.push('⇧');
+      const key = e.key === ' ' ? 'Space' : e.key.length === 1 ? e.key.toUpperCase() : e.key;
+      if (!['Meta','Control','Alt','Shift'].includes(e.key)) {
+        setHotkeys(h => ({ ...h, [capturing]: [...mods, key].join(' ') }));
+        setCapturing(null);
+      }
+    }
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [capturing]);
+
+  const shortcuts = [
+    { key: 'push',      label: 'Push to talk',    sub: 'Hold to record, release to paste' },
+    { key: 'handsfree', label: 'Hands-free mode',  sub: 'Press once to start, press again to stop' },
+  ];
+
+  return (
+    <>
+      <PageHeader title="Settings" contentWidth={620}/>
+      <div className="page-scroll">
+
+        {/* Keyboard Shortcuts */}
+        <div className="settings-section">
+          <div className="settings-section-title">Keyboard Shortcuts</div>
+          {shortcuts.map(({ key, label, sub }) => (
+            <div className="shortcut-card" key={key}>
+              <div className="shortcut-card-title">{label}</div>
+              <div className="shortcut-card-sub">{sub}</div>
+              <div className="shortcut-pill-row">
+                <div className={`shortcut-pill ${capturing === key ? 'capturing' : ''}`}>
+                  {capturing === key ? 'Press keys…' : hotkeys[key]}
+                </div>
+                <button
+                  className={`shortcut-edit-btn ${capturing === key ? 'active' : ''}`}
+                  onClick={() => setCapturing(capturing === key ? null : key)}
+                >
+                  {capturing === key
+                    ? <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M2 2l9 9M11 2 2 11"/></svg>
+                    : <I.Edit/>
+                  }
+                </button>
+              </div>
+            </div>
+          ))}
+          <button className="reset-btn" onClick={() => { setHotkeys({...DEFAULT_HOTKEYS}); setCapturing(null); }}>
+            Reset to default
+          </button>
+        </div>
+
+        {/* Microphone */}
+        <div className="settings-section">
+          <div className="settings-section-title">Microphone</div>
+          <div className="settings-box">
+            <div className="mic-settings-row">
+              <div className="mic-settings-info">
+                <div className="mic-settings-label">Microphone</div>
+                <div className="mic-settings-sub">{mic || 'Loading…'}</div>
+              </div>
+              <button className="btn-sm" onClick={() => setMicModal(true)}>Change</button>
+            </div>
+          </div>
+        </div>
+
+        {/* Language */}
+        <div className="settings-section">
+          <div className="settings-section-title">Transcription Language</div>
+          <div className="settings-box">
+            <div className="lang-grid">
+              {LANGS.map(l => (
+                <button key={l} className={`lang-pill ${l === 'English' ? 'selected' : ''}`}>{l}</button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+      </div>
+      {micModal && (
+        <MicPickerModal
+          mics={mics.length ? mics : ['Built-in Microphone', 'External Microphone']}
+          selected={mic}
+          onSelect={m => { setMic(m); setMicModal(false); }}
+          onClose={() => setMicModal(false)}
+        />
+      )}
+    </>
+  );
+}
+
+/* ── Support modal ───────────────────────────────────── */
+function SupportModal({ onClose }) {
+  const [type, setType]       = useState('Issue');
+  const [message, setMessage] = useState('');
+  const [file, setFile]       = useState(null);
+  const [sent, setSent]       = useState(false);
+
+  function send() {
+    if (!message.trim()) return;
+    setSent(true);
+  }
+
+  if (sent) {
+    return (
+      <div className="modal-overlay" onClick={onClose}>
+        <div className="modal modal-relative" style={{maxWidth:420,textAlign:'center'}} onClick={e => e.stopPropagation()}>
+          <div className="success-icon">
+            <I.Check/>
+          </div>
+          <div className="modal-title" style={{textAlign:'center'}}>Message sent</div>
+          <div className="modal-body" style={{textAlign:'center',marginBottom:24}}>
+            Thanks for reaching out. Our team will get back to you within 24 to 48 hours. Please check your email for the response.
+          </div>
+          <div style={{display:'flex',justifyContent:'center'}}>
+            <button className="btn-primary" onClick={onClose}>Done</button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal modal-lg modal-relative" onClick={e => e.stopPropagation()}>
+        <button className="modal-close" onClick={onClose}>
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M2 2l10 10M12 2 2 12"/></svg>
+        </button>
+        <div className="modal-title">Get Support</div>
+
+        <select
+          className="support-select"
+          value={type}
+          onChange={e => setType(e.target.value)}
+        >
+          <option>Issue</option>
+          <option>Billing</option>
+          <option>Feedback</option>
+        </select>
+
+        <textarea
+          className="support-textarea"
+          placeholder="Describe your issue or question in detail…"
+          value={message}
+          onChange={e => setMessage(e.target.value)}
+        />
+
+        <div className="support-footer">
+          <label className="attach-btn" title="Attach a file">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M13.5 8.5l-5.5 5.5a4 4 0 0 1-5.66-5.66l6-6a2.5 2.5 0 0 1 3.54 3.54l-6 6a1 1 0 0 1-1.42-1.42l5.5-5.5"/>
+            </svg>
+            <input type="file" onChange={e => setFile(e.target.files[0] || null)}/>
+          </label>
+          {file
+            ? <span className="attach-file-name">{file.name}</span>
+            : <span className="attach-file-name" style={{color:'var(--ink-mute)'}}>Attach a file (optional)</span>
+          }
+          <button className="btn-primary" onClick={send} disabled={!message.trim()}>
+            Send message
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── Placeholder ─────────────────────────────────────── */
+function PlaceholderPage({ title }) {
+  return (
+    <>
+      <PageHeader title={title}/>
+      <div className="page-scroll">
+        <div className="placeholder">
+          <span>Coming up next</span>
+        </div>
+      </div>
+    </>
+  );
+}
+
+/* ── Sidebar ─────────────────────────────────────────── */
+function Sidebar({ page, setPage }) {
+  function Item({ id, Icon, label }) {
+    return (
+      <div className={`nav-item ${page === id ? 'active' : ''}`} onClick={() => setPage(id)}>
+        <Icon/><span className="label">{label}</span>
+      </div>
+    );
+  }
+  return (
+    <div className="sidebar">
+      <div className="sidebar-top"/>
+      <div className="sidebar-logo">
+        <img src="assets/rabbit-logo.svg" style={{height:55, width:'auto', display:'block'}} alt="Voice Rabbit"/>
+      </div>
+      <nav className="sidebar-nav">
+        <Item id="home"       Icon={I.Home}     label="Home"/>
+        <Item id="dictionary" Icon={I.Book}     label="Dictionary"/>
+        <Item id="style"      Icon={I.Pen}      label="Style"/>
+        <Item id="settings"   Icon={I.Settings} label="Settings"/>
+      </nav>
+      <div className="sidebar-bottom">
+        <Item id="free-month" Icon={I.Gift} label="Get a free month"/>
+        <Item id="support"    Icon={I.Help} label="Support"/>
+      </div>
+    </div>
+  );
+}
+
+/* ── App ─────────────────────────────────────────────── */
+function App() {
+  const [page, setPage]               = useState('home');
+  const [supportOpen, setSupportOpen] = useState(false);
+  function handleNav(id) {
+    if (id === 'support') { setSupportOpen(true); return; }
+    setPage(id);
+  }
+
+  const pages = {
+    home:        <HomePage/>,
+    dictionary:  <DictionaryPage/>,
+    style:       <StylePage/>,
+    settings:    <SettingsPage/>,
+    'free-month':<PlaceholderPage title="Get a Free Month"/>,
+  };
+
+  return (
+    <div className="app">
+      <Sidebar page={page} setPage={handleNav}/>
+      <div className="content">
+        {pages[page] || <HomePage/>}
+      </div>
+      {supportOpen && <SupportModal onClose={() => setSupportOpen(false)}/>}
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>

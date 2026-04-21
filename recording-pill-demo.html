@@ -1,0 +1,373 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Voice Rabbit — Recording Pill (Dev Reference)</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: "Inter", sans-serif;
+      background: #0f1117;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 52px;
+      padding: 48px 24px;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .header { text-align: center; }
+    .header h1 { font-size: 11px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(255,255,255,0.3); }
+    .header p  { font-size: 12px; color: rgba(255,255,255,0.2); margin-top: 6px; }
+
+    /* ── Pill ── */
+    .rec-pill {
+      background: #1a1d24;
+      border: 1px solid rgba(255,255,255,0.09);
+      border-radius: 9999px;
+      padding: 10px 14px 10px 12px;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      box-shadow: 0 12px 40px rgba(0,0,0,0.5), 0 2px 8px rgba(0,0,0,0.25);
+      animation: pillIn .25s cubic-bezier(0.22,1,0.36,1);
+    }
+    @keyframes pillIn {
+      from { opacity:0; transform: translateY(8px) scale(0.95); }
+      to   { opacity:1; transform: translateY(0) scale(1); }
+    }
+
+    .rabbit-wrap { flex-shrink: 0; display: flex; align-items: center; }
+
+    /* ── Waveform bars ── */
+    .waveform {
+      display: flex;
+      align-items: center;
+      gap: 2.5px;
+      height: 24px;
+    }
+    .bar {
+      width: 2px;
+      border-radius: 2px;
+      background: #f0ebe0;
+      transition: height 0.05s ease-out;
+      flex-shrink: 0;
+    }
+
+    /* CSS fallback animation (used when mic not available) */
+    .bar.animated { animation: barWave var(--dur, 0.9s) ease-in-out infinite alternate; }
+    @keyframes barWave {
+      from { height: var(--min, 4px); }
+      to   { height: var(--max, 24px); }
+    }
+
+    /* Stop button */
+    .rec-stop {
+      width: 22px; height: 22px;
+      border-radius: 50%;
+      border: none;
+      background: rgba(240,235,224,0.15);
+      color: #f0ebe0;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; flex-shrink: 0;
+      transition: background .12s;
+    }
+    .rec-stop:hover { background: rgba(240,235,224,0.25); }
+
+    /* ── Section layout ── */
+    .section { display: flex; flex-direction: column; align-items: center; gap: 16px; }
+    .section-label { font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: rgba(255,255,255,0.25); }
+
+    .note {
+      font-size: 12px; color: rgba(255,255,255,0.2);
+      text-align: center; max-width: 340px; line-height: 1.65;
+    }
+    .note strong { color: rgba(255,255,255,0.4); font-weight: 500; }
+
+    hr { border: none; border-top: 1px solid rgba(255,255,255,0.06); width: 280px; }
+
+    /* ── Live demo ── */
+    .demo-wrap { display: flex; flex-direction: column; align-items: center; gap: 18px; }
+    .demo-controls { display: flex; gap: 8px; }
+    .ctrl-btn {
+      padding: 7px 16px;
+      border-radius: 8px;
+      border: 1px solid rgba(255,255,255,0.1);
+      background: rgba(255,255,255,0.04);
+      color: rgba(255,255,255,0.5);
+      font-size: 12.5px; font-weight: 500; font-family: inherit;
+      cursor: pointer;
+      transition: background .12s, color .12s, border-color .12s;
+    }
+    .ctrl-btn:hover { background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.8); }
+    .ctrl-btn.active {
+      background: rgba(240,235,224,0.1);
+      color: #f0ebe0;
+      border-color: rgba(240,235,224,0.2);
+    }
+
+    .mic-status {
+      font-size: 11px;
+      color: rgba(255,255,255,0.2);
+      text-align: center;
+    }
+    .mic-status.live { color: #a3e635; }
+    .mic-status.denied { color: #f87171; }
+
+    #demo-pill-slot { min-height: 44px; display: flex; align-items: center; }
+
+    /* Dev notes */
+    .dev-notes {
+      max-width: 480px;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 12px;
+      padding: 20px 22px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .dev-notes h2 { font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: rgba(255,255,255,0.3); }
+    .dev-notes li { font-size: 12.5px; color: rgba(255,255,255,0.35); line-height: 1.7; margin-left: 16px; }
+    .dev-notes code { font-family: monospace; font-size: 11.5px; color: rgba(240,235,224,0.5); background: rgba(255,255,255,0.05); padding: 1px 5px; border-radius: 3px; }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <h1>Voice Rabbit — Recording Pill</h1>
+  <p>Developer reference &amp; animation spec</p>
+</div>
+
+<!-- Push to talk -->
+<div class="section">
+  <div class="section-label">Push to talk</div>
+  <div class="rec-pill" id="pill-push">
+    <div class="rabbit-wrap"><svg width="24" height="24" viewBox="0 0 305.43 305.43" fill="white"><path d="M 469.00 971.87 C 360.19 966.72 279.10 934.42 238.38 880.00 C 205.47 836.02 198.10 784.21 215.13 716.50 C 223.86 681.77 238.31 647.96 259.25 613.23 C 268.53 597.84 268.12 603.88 262.41 566.50 C 254.74 516.36 242.27 461.32 227.85 414.00 C 217.57 380.27 203.97 344.14 181.55 291.00 C 162.41 245.65 152.68 210.03 150.55 177.50 C 149.16 156.18 153.41 133.03 161.95 115.50 C 172.55 93.72 190.16 76.76 214.50 64.88 C 229.02 57.80 237.63 55.78 253.50 55.75 C 268.64 55.72 279.13 58.02 294.90 64.84 C 341.26 84.88 375.63 121.86 406.10 184.50 C 441.89 258.08 464.89 350.73 474.05 458.23 C 477.08 493.75 476.65 491.33 479.83 490.56 C 481.30 490.21 492.45 489.66 504.60 489.33 L 526.71 488.73 L 527.38 476.12 C 530.26 421.91 543.15 352.18 559.61 301.84 C 581.33 235.38 604.98 201.15 637.00 189.84 C 642.56 187.87 645.46 187.54 657.00 187.55 C 672.43 187.56 673.53 187.82 699.50 197.46 C 722.52 206.01 736.04 208.97 759.00 210.52 C 787.08 212.41 805.90 220.92 822.46 239.22 C 830.35 247.94 834.05 253.83 841.98 270.24 C 856.19 299.68 866.24 332.53 871.12 365.50 C 873.03 378.44 872.77 408.18 870.64 419.74 C 866.21 443.82 858.38 459.65 844.24 473.14 C 835.67 481.30 826.76 486.49 815.00 490.15 C 808.71 492.11 805.48 492.47 795.00 492.39 C 776.29 492.24 759.65 487.43 742.87 477.31 C 737.86 474.30 733.44 472.21 733.04 472.66 C 732.64 473.12 730.62 481.15 728.56 490.50 C 726.49 499.85 721.70 520.10 717.90 535.50 C 714.10 550.90 710.60 565.13 710.13 567.12 C 709.32 570.55 709.59 571.12 715.23 578.12 C 732.48 599.53 753.35 634.98 767.12 666.28 C 781.28 698.44 791.98 739.11 795.12 772.69 C 800.09 825.76 777.36 876.72 733.00 911.93 C 675.54 957.54 587.66 977.49 469.00 971.87 Z M 561.50 931.09 C 611.10 925.27 643.67 916.67 675.62 900.95 C 715.38 881.39 742.61 851.13 751.62 816.50 C 758.23 791.12 755.44 759.46 742.94 718.00 C 730.02 675.17 706.73 631.53 679.46 599.05 C 674.17 592.75 669.20 586.36 668.42 584.85 C 665.61 579.41 666.72 572.26 676.53 532.82 C 681.77 511.74 688.53 483.25 691.54 469.50 C 694.56 455.75 697.24 443.55 697.50 442.40 C 697.83 440.88 695.46 437.02 688.97 428.52 C 672.83 407.38 659.24 384.22 648.52 359.62 C 642.05 344.75 632.01 315.73 632.00 311.88 C 632.00 308.03 634.74 300.92 637.28 298.15 C 644.85 289.92 660.00 290.26 667.20 298.82 C 668.78 300.70 671.68 307.57 674.54 316.21 C 691.03 366.02 721.59 413.56 751.50 435.92 C 760.93 442.98 774.86 449.70 784.00 451.61 C 807.52 456.53 822.54 446.10 829.51 420.00 C 832.13 410.17 832.69 382.62 830.56 368.10 C 825.99 336.91 810.97 292.76 798.63 274.19 C 787.36 257.24 776.45 251.09 755.00 249.58 C 726.38 247.57 714.59 245.09 689.76 235.85 C 667.57 227.60 664.41 226.70 657.50 226.68 C 640.80 226.63 625.02 244.15 610.16 279.25 C 588.64 330.09 571.80 409.54 567.23 481.87 C 566.48 493.74 566.53 494.28 568.47 495.03 C 569.59 495.47 575.22 497.26 581.00 499.02 C 594.33 503.07 607.32 508.28 612.29 511.57 C 616.76 514.53 620.99 522.54 620.97 528.00 C 620.93 538.92 608.72 549.58 598.57 547.57 C 596.88 547.23 590.43 544.91 584.24 542.41 C 570.71 536.94 554.34 532.68 538.32 530.44 C 521.46 528.09 490.32 528.89 473.00 532.13 C 466.12 533.41 457.48 534.46 453.79 534.45 C 447.98 534.44 446.52 534.04 442.85 531.46 C 435.36 526.20 433.98 522.01 432.40 499.79 C 426.24 413.21 415.27 347.16 396.49 283.50 C 381.50 232.70 362.72 191.63 339.00 157.78 C 330.80 146.08 310.04 125.07 299.30 117.62 C 276.20 101.59 256.67 96.70 239.19 102.57 C 228.71 106.09 221.42 110.75 213.87 118.76 C 202.35 130.98 197.15 145.43 196.27 167.71 C 195.41 189.19 198.94 209.21 208.38 236.50 C 213.15 250.29 215.19 255.37 230.24 291.00 C 268.99 382.70 292.56 467.54 308.58 572.89 C 313.36 604.37 313.05 606.91 302.63 621.00 C 269.94 665.20 246.52 733.09 246.73 783.00 C 246.97 840.12 281.38 883.23 347.42 909.14 C 373.60 919.42 414.28 928.20 448.50 930.97 C 455.65 931.55 463.52 932.19 466.00 932.39 C 475.30 933.16 552.87 932.10 561.50 931.09 Z M 442.36 768.91 C 437.31 767.45 429.87 761.76 426.38 756.68 C 413.71 738.30 415.22 709.78 429.53 697.19 C 446.37 682.36 468.96 695.69 474.74 723.87 C 478.80 743.59 469.55 764.09 454.61 768.52 C 449.06 770.17 446.94 770.24 442.36 768.91 Z M 638.63 756.97 C 627.89 753.75 618.69 740.91 615.33 724.46 C 611.81 707.18 618.96 688.19 631.41 681.77 C 636.94 678.92 646.02 678.90 651.52 681.74 C 665.34 688.86 674.88 710.21 672.13 727.88 C 668.80 749.35 654.53 761.73 638.63 756.97 Z" transform="matrix(0.246838 0 0 0.246837 152.716702 152.716509) matrix(1 0 0 1 0 0) translate(-511.349083, -514.273001)"/></svg></div>
+    <div class="waveform" id="wf-push"></div>
+  </div>
+  <p class="note"><strong>No stop button.</strong> User holds hotkey → pill appears. Release → pill disappears. Waveform reacts to voice in real time.</p>
+</div>
+
+<hr>
+
+<!-- Hands-free -->
+<div class="section">
+  <div class="section-label">Hands-free mode</div>
+  <div class="rec-pill" id="pill-hf">
+    <div class="rabbit-wrap"><svg width="24" height="24" viewBox="0 0 305.43 305.43" fill="white"><path d="M 469.00 971.87 C 360.19 966.72 279.10 934.42 238.38 880.00 C 205.47 836.02 198.10 784.21 215.13 716.50 C 223.86 681.77 238.31 647.96 259.25 613.23 C 268.53 597.84 268.12 603.88 262.41 566.50 C 254.74 516.36 242.27 461.32 227.85 414.00 C 217.57 380.27 203.97 344.14 181.55 291.00 C 162.41 245.65 152.68 210.03 150.55 177.50 C 149.16 156.18 153.41 133.03 161.95 115.50 C 172.55 93.72 190.16 76.76 214.50 64.88 C 229.02 57.80 237.63 55.78 253.50 55.75 C 268.64 55.72 279.13 58.02 294.90 64.84 C 341.26 84.88 375.63 121.86 406.10 184.50 C 441.89 258.08 464.89 350.73 474.05 458.23 C 477.08 493.75 476.65 491.33 479.83 490.56 C 481.30 490.21 492.45 489.66 504.60 489.33 L 526.71 488.73 L 527.38 476.12 C 530.26 421.91 543.15 352.18 559.61 301.84 C 581.33 235.38 604.98 201.15 637.00 189.84 C 642.56 187.87 645.46 187.54 657.00 187.55 C 672.43 187.56 673.53 187.82 699.50 197.46 C 722.52 206.01 736.04 208.97 759.00 210.52 C 787.08 212.41 805.90 220.92 822.46 239.22 C 830.35 247.94 834.05 253.83 841.98 270.24 C 856.19 299.68 866.24 332.53 871.12 365.50 C 873.03 378.44 872.77 408.18 870.64 419.74 C 866.21 443.82 858.38 459.65 844.24 473.14 C 835.67 481.30 826.76 486.49 815.00 490.15 C 808.71 492.11 805.48 492.47 795.00 492.39 C 776.29 492.24 759.65 487.43 742.87 477.31 C 737.86 474.30 733.44 472.21 733.04 472.66 C 732.64 473.12 730.62 481.15 728.56 490.50 C 726.49 499.85 721.70 520.10 717.90 535.50 C 714.10 550.90 710.60 565.13 710.13 567.12 C 709.32 570.55 709.59 571.12 715.23 578.12 C 732.48 599.53 753.35 634.98 767.12 666.28 C 781.28 698.44 791.98 739.11 795.12 772.69 C 800.09 825.76 777.36 876.72 733.00 911.93 C 675.54 957.54 587.66 977.49 469.00 971.87 Z M 561.50 931.09 C 611.10 925.27 643.67 916.67 675.62 900.95 C 715.38 881.39 742.61 851.13 751.62 816.50 C 758.23 791.12 755.44 759.46 742.94 718.00 C 730.02 675.17 706.73 631.53 679.46 599.05 C 674.17 592.75 669.20 586.36 668.42 584.85 C 665.61 579.41 666.72 572.26 676.53 532.82 C 681.77 511.74 688.53 483.25 691.54 469.50 C 694.56 455.75 697.24 443.55 697.50 442.40 C 697.83 440.88 695.46 437.02 688.97 428.52 C 672.83 407.38 659.24 384.22 648.52 359.62 C 642.05 344.75 632.01 315.73 632.00 311.88 C 632.00 308.03 634.74 300.92 637.28 298.15 C 644.85 289.92 660.00 290.26 667.20 298.82 C 668.78 300.70 671.68 307.57 674.54 316.21 C 691.03 366.02 721.59 413.56 751.50 435.92 C 760.93 442.98 774.86 449.70 784.00 451.61 C 807.52 456.53 822.54 446.10 829.51 420.00 C 832.13 410.17 832.69 382.62 830.56 368.10 C 825.99 336.91 810.97 292.76 798.63 274.19 C 787.36 257.24 776.45 251.09 755.00 249.58 C 726.38 247.57 714.59 245.09 689.76 235.85 C 667.57 227.60 664.41 226.70 657.50 226.68 C 640.80 226.63 625.02 244.15 610.16 279.25 C 588.64 330.09 571.80 409.54 567.23 481.87 C 566.48 493.74 566.53 494.28 568.47 495.03 C 569.59 495.47 575.22 497.26 581.00 499.02 C 594.33 503.07 607.32 508.28 612.29 511.57 C 616.76 514.53 620.99 522.54 620.97 528.00 C 620.93 538.92 608.72 549.58 598.57 547.57 C 596.88 547.23 590.43 544.91 584.24 542.41 C 570.71 536.94 554.34 532.68 538.32 530.44 C 521.46 528.09 490.32 528.89 473.00 532.13 C 466.12 533.41 457.48 534.46 453.79 534.45 C 447.98 534.44 446.52 534.04 442.85 531.46 C 435.36 526.20 433.98 522.01 432.40 499.79 C 426.24 413.21 415.27 347.16 396.49 283.50 C 381.50 232.70 362.72 191.63 339.00 157.78 C 330.80 146.08 310.04 125.07 299.30 117.62 C 276.20 101.59 256.67 96.70 239.19 102.57 C 228.71 106.09 221.42 110.75 213.87 118.76 C 202.35 130.98 197.15 145.43 196.27 167.71 C 195.41 189.19 198.94 209.21 208.38 236.50 C 213.15 250.29 215.19 255.37 230.24 291.00 C 268.99 382.70 292.56 467.54 308.58 572.89 C 313.36 604.37 313.05 606.91 302.63 621.00 C 269.94 665.20 246.52 733.09 246.73 783.00 C 246.97 840.12 281.38 883.23 347.42 909.14 C 373.60 919.42 414.28 928.20 448.50 930.97 C 455.65 931.55 463.52 932.19 466.00 932.39 C 475.30 933.16 552.87 932.10 561.50 931.09 Z M 442.36 768.91 C 437.31 767.45 429.87 761.76 426.38 756.68 C 413.71 738.30 415.22 709.78 429.53 697.19 C 446.37 682.36 468.96 695.69 474.74 723.87 C 478.80 743.59 469.55 764.09 454.61 768.52 C 449.06 770.17 446.94 770.24 442.36 768.91 Z M 638.63 756.97 C 627.89 753.75 618.69 740.91 615.33 724.46 C 611.81 707.18 618.96 688.19 631.41 681.77 C 636.94 678.92 646.02 678.90 651.52 681.74 C 665.34 688.86 674.88 710.21 672.13 727.88 C 668.80 749.35 654.53 761.73 638.63 756.97 Z" transform="matrix(0.246838 0 0 0.246837 152.716702 152.716509) matrix(1 0 0 1 0 0) translate(-511.349083, -514.273001)"/></svg></div>
+    <div class="waveform" id="wf-hf"></div>
+    <button class="rec-stop" title="Stop recording">
+      <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor">
+        <rect x="0.5" y="0.5" width="7" height="7" rx="1.5"/>
+      </svg>
+    </button>
+  </div>
+  <p class="note">User presses hotkey once → pill stays on screen with <strong>stop button</strong>. Press stop or hotkey again to end.</p>
+</div>
+
+<hr>
+
+<!-- Live interactive demo -->
+<div class="section">
+  <div class="section-label">Live demo</div>
+  <div class="demo-wrap">
+    <div class="demo-controls">
+      <button class="ctrl-btn" id="btn-push" onclick="showMode('push')">Push to talk</button>
+      <button class="ctrl-btn" id="btn-hf"   onclick="showMode('hf')">Hands-free</button>
+      <button class="ctrl-btn"               onclick="hidePill()">Hide</button>
+    </div>
+    <div id="demo-pill-slot"></div>
+    <div class="mic-status" id="mic-status">Click a mode above to preview</div>
+  </div>
+</div>
+
+<hr>
+
+<!-- Dev notes -->
+<div class="dev-notes">
+  <h2>Dev notes</h2>
+  <ul>
+    <li>Waveform uses <code>Web Audio API</code> + <code>AnalyserNode</code> — 6 frequency bands mapped to bar heights.</li>
+    <li>When mic is active: bars driven by <code>getByteFrequencyData()</code> at 60fps via <code>requestAnimationFrame</code>.</li>
+    <li>When silent / no speech: bars smoothly return to min height (~4px) — looks "flat".</li>
+    <li>Fallback: if mic permission denied, bars run a CSS looping animation.</li>
+    <li>In the Electron Mac app, mic access is always available — no permission prompt needed after initial setup.</li>
+    <li>Pill entrance: <code>pillIn</code> keyframe — 250ms spring ease, slight translateY + scale.</li>
+    <li>Pill exit: fade + scale down, 150ms. Trigger on hotkey release (push) or stop button tap (hands-free).</li>
+  </ul>
+</div>
+
+<script>
+  /* ── Bar config matching the design SVG ── */
+  // Heights from the SVG (normalised): each bar has a natural "resting" height
+  // that gives the waveform its characteristic uneven silhouette.
+  const BAR_PROFILE = [
+    { min:3,  max:10, dur:0.90 },
+    { min:4,  max:16, dur:0.75 },
+    { min:3,  max:12, dur:0.82 },
+    { min:5,  max:20, dur:0.68 },
+    { min:4,  max:14, dur:0.78 },
+    { min:3,  max:18, dur:0.62 },
+    { min:6,  max:22, dur:0.70 },
+    { min:4,  max:16, dur:0.85 },
+    { min:3,  max:12, dur:0.73 },
+    { min:5,  max:20, dur:0.67 },
+    { min:4,  max:14, dur:0.80 },
+    { min:6,  max:22, dur:0.64 },
+    { min:3,  max:16, dur:0.88 },
+    { min:5,  max:18, dur:0.72 },
+    { min:4,  max:14, dur:0.76 },
+    { min:3,  max:20, dur:0.66 },
+    { min:5,  max:12, dur:0.84 },
+    { min:4,  max:16, dur:0.71 },
+  ];
+
+  function createWaveform(container, animated = true) {
+    const bars = [];
+    BAR_PROFILE.forEach(({ min, max, dur }) => {
+      const b = document.createElement('div');
+      b.className = 'bar';
+      if (animated) {
+        b.classList.add('animated');
+        b.style.setProperty('--min', min + 'px');
+        b.style.setProperty('--max', max + 'px');
+        b.style.setProperty('--dur', dur + 's');
+        b.style.animationDelay = (Math.random() * 0.4) + 's';
+        b.style.height = min + 'px';
+      } else {
+        b.style.height = min + 'px';
+      }
+      container.appendChild(b);
+      bars.push({ el: b, min, max });
+    });
+    return bars;
+  }
+
+  // Render static pills
+  createWaveform(document.getElementById('wf-push'), true);
+  createWaveform(document.getElementById('wf-hf'), true);
+
+  /* ── Audio viz ── */
+  let audioCtx, analyser, micStream, animFrame;
+  let liveBars = [];
+
+  async function startMic() {
+    try {
+      micStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+      audioCtx  = new (window.AudioContext || window.webkitAudioContext)();
+      const src = audioCtx.createMediaStreamSource(micStream);
+      analyser  = audioCtx.createAnalyser();
+      analyser.fftSize = 128;
+      analyser.smoothingTimeConstant = 0.75;
+      src.connect(analyser);
+
+      const data = new Uint8Array(analyser.frequencyBinCount); // 64 bins
+      const nBars = liveBars.length;
+      const binPerBar = Math.floor(data.length / nBars);
+
+      function tick() {
+        animFrame = requestAnimationFrame(tick);
+        analyser.getByteFrequencyData(data);
+        liveBars.forEach(({ el, min, max }, i) => {
+          let sum = 0;
+          for (let j = i * binPerBar; j < (i + 1) * binPerBar; j++) sum += data[j];
+          const avg = sum / binPerBar;             // 0–255
+          const h   = min + (avg / 255) * (max - min);
+          el.style.height = h.toFixed(1) + 'px';
+        });
+      }
+      tick();
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  function stopMic() {
+    cancelAnimationFrame(animFrame);
+    micStream?.getTracks().forEach(t => t.stop());
+    audioCtx?.close();
+    audioCtx = analyser = micStream = null;
+    liveBars = [];
+  }
+
+  /* ── Demo pill builder ── */
+  function buildPill(mode) {
+    const pill = document.createElement('div');
+    pill.className = 'rec-pill';
+
+    const rabbitWrap = document.createElement('div');
+    rabbitWrap.className = 'rabbit-wrap';
+    rabbitWrap.innerHTML = `<svg width="24" height="24" viewBox="0 0 305.43 305.43" fill="white"><path d="M 469.00 971.87 C 360.19 966.72 279.10 934.42 238.38 880.00 C 205.47 836.02 198.10 784.21 215.13 716.50 C 223.86 681.77 238.31 647.96 259.25 613.23 C 268.53 597.84 268.12 603.88 262.41 566.50 C 254.74 516.36 242.27 461.32 227.85 414.00 C 217.57 380.27 203.97 344.14 181.55 291.00 C 162.41 245.65 152.68 210.03 150.55 177.50 C 149.16 156.18 153.41 133.03 161.95 115.50 C 172.55 93.72 190.16 76.76 214.50 64.88 C 229.02 57.80 237.63 55.78 253.50 55.75 C 268.64 55.72 279.13 58.02 294.90 64.84 C 341.26 84.88 375.63 121.86 406.10 184.50 C 441.89 258.08 464.89 350.73 474.05 458.23 C 477.08 493.75 476.65 491.33 479.83 490.56 C 481.30 490.21 492.45 489.66 504.60 489.33 L 526.71 488.73 L 527.38 476.12 C 530.26 421.91 543.15 352.18 559.61 301.84 C 581.33 235.38 604.98 201.15 637.00 189.84 C 642.56 187.87 645.46 187.54 657.00 187.55 C 672.43 187.56 673.53 187.82 699.50 197.46 C 722.52 206.01 736.04 208.97 759.00 210.52 C 787.08 212.41 805.90 220.92 822.46 239.22 C 830.35 247.94 834.05 253.83 841.98 270.24 C 856.19 299.68 866.24 332.53 871.12 365.50 C 873.03 378.44 872.77 408.18 870.64 419.74 C 866.21 443.82 858.38 459.65 844.24 473.14 C 835.67 481.30 826.76 486.49 815.00 490.15 C 808.71 492.11 805.48 492.47 795.00 492.39 C 776.29 492.24 759.65 487.43 742.87 477.31 C 737.86 474.30 733.44 472.21 733.04 472.66 C 732.64 473.12 730.62 481.15 728.56 490.50 C 726.49 499.85 721.70 520.10 717.90 535.50 C 714.10 550.90 710.60 565.13 710.13 567.12 C 709.32 570.55 709.59 571.12 715.23 578.12 C 732.48 599.53 753.35 634.98 767.12 666.28 C 781.28 698.44 791.98 739.11 795.12 772.69 C 800.09 825.76 777.36 876.72 733.00 911.93 C 675.54 957.54 587.66 977.49 469.00 971.87 Z M 561.50 931.09 C 611.10 925.27 643.67 916.67 675.62 900.95 C 715.38 881.39 742.61 851.13 751.62 816.50 C 758.23 791.12 755.44 759.46 742.94 718.00 C 730.02 675.17 706.73 631.53 679.46 599.05 C 674.17 592.75 669.20 586.36 668.42 584.85 C 665.61 579.41 666.72 572.26 676.53 532.82 C 681.77 511.74 688.53 483.25 691.54 469.50 C 694.56 455.75 697.24 443.55 697.50 442.40 C 697.83 440.88 695.46 437.02 688.97 428.52 C 672.83 407.38 659.24 384.22 648.52 359.62 C 642.05 344.75 632.01 315.73 632.00 311.88 C 632.00 308.03 634.74 300.92 637.28 298.15 C 644.85 289.92 660.00 290.26 667.20 298.82 C 668.78 300.70 671.68 307.57 674.54 316.21 C 691.03 366.02 721.59 413.56 751.50 435.92 C 760.93 442.98 774.86 449.70 784.00 451.61 C 807.52 456.53 822.54 446.10 829.51 420.00 C 832.13 410.17 832.69 382.62 830.56 368.10 C 825.99 336.91 810.97 292.76 798.63 274.19 C 787.36 257.24 776.45 251.09 755.00 249.58 C 726.38 247.57 714.59 245.09 689.76 235.85 C 667.57 227.60 664.41 226.70 657.50 226.68 C 640.80 226.63 625.02 244.15 610.16 279.25 C 588.64 330.09 571.80 409.54 567.23 481.87 C 566.48 493.74 566.53 494.28 568.47 495.03 C 569.59 495.47 575.22 497.26 581.00 499.02 C 594.33 503.07 607.32 508.28 612.29 511.57 C 616.76 514.53 620.99 522.54 620.97 528.00 C 620.93 538.92 608.72 549.58 598.57 547.57 C 596.88 547.23 590.43 544.91 584.24 542.41 C 570.71 536.94 554.34 532.68 538.32 530.44 C 521.46 528.09 490.32 528.89 473.00 532.13 C 466.12 533.41 457.48 534.46 453.79 534.45 C 447.98 534.44 446.52 534.04 442.85 531.46 C 435.36 526.20 433.98 522.01 432.40 499.79 C 426.24 413.21 415.27 347.16 396.49 283.50 C 381.50 232.70 362.72 191.63 339.00 157.78 C 330.80 146.08 310.04 125.07 299.30 117.62 C 276.20 101.59 256.67 96.70 239.19 102.57 C 228.71 106.09 221.42 110.75 213.87 118.76 C 202.35 130.98 197.15 145.43 196.27 167.71 C 195.41 189.19 198.94 209.21 208.38 236.50 C 213.15 250.29 215.19 255.37 230.24 291.00 C 268.99 382.70 292.56 467.54 308.58 572.89 C 313.36 604.37 313.05 606.91 302.63 621.00 C 269.94 665.20 246.52 733.09 246.73 783.00 C 246.97 840.12 281.38 883.23 347.42 909.14 C 373.60 919.42 414.28 928.20 448.50 930.97 C 455.65 931.55 463.52 932.19 466.00 932.39 C 475.30 933.16 552.87 932.10 561.50 931.09 Z M 442.36 768.91 C 437.31 767.45 429.87 761.76 426.38 756.68 C 413.71 738.30 415.22 709.78 429.53 697.19 C 446.37 682.36 468.96 695.69 474.74 723.87 C 478.80 743.59 469.55 764.09 454.61 768.52 C 449.06 770.17 446.94 770.24 442.36 768.91 Z M 638.63 756.97 C 627.89 753.75 618.69 740.91 615.33 724.46 C 611.81 707.18 618.96 688.19 631.41 681.77 C 636.94 678.92 646.02 678.90 651.52 681.74 C 665.34 688.86 674.88 710.21 672.13 727.88 C 668.80 749.35 654.53 761.73 638.63 756.97 Z" transform="matrix(0.246838 0 0 0.246837 152.716702 152.716509) matrix(1 0 0 1 0 0) translate(-511.349083, -514.273001)"/></svg>`;
+
+    const wf = document.createElement('div');
+    wf.className = 'waveform';
+
+    pill.appendChild(rabbitWrap);
+    pill.appendChild(wf);
+
+    if (mode === 'hf') {
+      const btn = document.createElement('button');
+      btn.className = 'rec-stop';
+      btn.title = 'Stop recording';
+      btn.innerHTML = `<svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor"><rect x=".5" y=".5" width="7" height="7" rx="1.5"/></svg>`;
+      btn.onclick = hidePill;
+      pill.appendChild(btn);
+    }
+
+    return { pill, wf };
+  }
+
+  async function showMode(mode) {
+    document.getElementById('btn-push').classList.toggle('active', mode === 'push');
+    document.getElementById('btn-hf').classList.toggle('active', mode === 'hf');
+
+    stopMic();
+    const slot = document.getElementById('demo-pill-slot');
+    slot.innerHTML = '';
+
+    const { pill, wf } = buildPill(mode);
+    slot.appendChild(pill);
+
+    const statusEl = document.getElementById('mic-status');
+    statusEl.textContent = 'Requesting mic access…';
+    statusEl.className = 'mic-status';
+
+    // Try live mic first
+    liveBars = createWaveform(wf, false);
+    const granted = await startMic();
+
+    if (granted) {
+      statusEl.textContent = '🎙 Live mic — speak to see the waveform react';
+      statusEl.className = 'mic-status live';
+    } else {
+      // Fallback to CSS animation
+      liveBars.forEach(({ el }, i) => {
+        const { min, max, dur } = BAR_PROFILE[i];
+        el.classList.add('animated');
+        el.style.setProperty('--min', min + 'px');
+        el.style.setProperty('--max', max + 'px');
+        el.style.setProperty('--dur', dur + 's');
+        el.style.animationDelay = (Math.random() * 0.4) + 's';
+      });
+      statusEl.textContent = 'Mic access denied — showing CSS animation fallback';
+      statusEl.className = 'mic-status denied';
+    }
+  }
+
+  function hidePill() {
+    stopMic();
+    document.getElementById('demo-pill-slot').innerHTML = '';
+    document.getElementById('btn-push').classList.remove('active');
+    document.getElementById('btn-hf').classList.remove('active');
+    const s = document.getElementById('mic-status');
+    s.textContent = 'Click a mode above to preview';
+    s.className = 'mic-status';
+  }
+</script>
+</body>
+</html>
